@@ -20,13 +20,22 @@ Right now Retina S lives as a fork on top of Metallum. Long-term goal is to spli
 ## Current status
 GBuffer + composite pipeline is stable, no known crashes. Two composite stages exist:
 - opaque-only (debug_depth) — used today
-- full-scene (post translucent/entities/outline, debug_depth) — used today too, confirmed working with Sodium
+- full-scene (post translucent/entities/outline) — currently swapped to a depth-reconstructed normal debug view (`debug_normal`) while normals are being validated; was debug_depth_full before that, swap back in `CompositePass#runFull` if needed
 
-![Full-scene depth debug](pictures/depth1.png)
+No real geometric normal G-buffer (MRT on the terrain draw) yet — `debug_normal` reconstructs an approximate view-space normal purely from the depth buffer (screen-space derivatives of unprojected view-space position), as a cheap way to validate the math before committing to a real MRT rewrite. Expect noise on silhouette edges (block/mob outlines against sky) — that's the known limitation of this technique, not a bug. Flat faces and hard edges (block corners) read cleanly.
 
 Both stages need their own mixin: the opaque stage hooks Sodium's `drawChunkLayer` directly (the only place that sees the right OPAQUE/TRANSLUCENT timing with Sodium installed), while the full-scene stage hooks `LevelRenderer#render`'s `FrameGraphBuilder#execute` call directly (the only place that sees the whole frame — Sodium never touches entities/outline/clouds, so it can't own this stage). Both are registered in `metallum.mixins.json`'s `client` list — if a mixin class exists but isn't listed there, it silently never applies, no error, no crash, just nothing happening. Learned that one the hard way.
 
 Shadow map, bloom, and fog were pulled out and haven't been rebuilt yet.
+
+### Known perf issue (normal debug)
+`debug_normal` is noticeably heavier than `debug_depth_full` — drops observed to 30-50 FPS with 16-34ms frame intervals, whole system feeling laggy. Not yet root-caused, but the obvious suspects: 5 dependent texture samples + 5 full `InvProjMat` unprojects per pixel (vs. 1 for debug_depth), running at full render resolution, every frame, on top of the two full-frame `copyTextureToTexture` calls `runFull` already does. This is a debug-only visualization, not representative of what a real MRT-based normal buffer would cost (that writes normals once per pixel during the terrain draw itself, not reconstructs them from scratch per composite frame) — but worth profiling before assuming it's "just how normals are" going forward.
+
+## Screenshots
+![Full-scene depth debug](pictures/depth1.png)
+![Full-scene normal debug (depth-reconstructed)](pictures/normal1.png)
+
+
 
 ## Requirements
 - macOS

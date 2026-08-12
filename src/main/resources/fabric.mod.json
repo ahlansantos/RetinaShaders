@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "metallum",
   "version": "${version}",
-  "name": "Metal-Alloy",
+  "name": "RetinaS",
   "description": "Metallum's Metal backend for Minecraft on macOS, plus a deferred shading layer (shadows, SSAO/SSGI, TAA) built on top of it.",
   "authors": [
     "ahlansantos - shader code",

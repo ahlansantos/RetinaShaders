@@ -90,6 +90,18 @@ public final class CompositePass {
         return debugDepthFullPipeline;
     }
 
+    private static RenderPipeline debugNormalPipeline;
+
+    // Same depth state as debugDepthFullPipeline (ALWAYS_PASS/no write) --
+    // see Bug #1 in the composite recap for why DEFAULT silently drops
+    // water/mob/outline pixels here.
+    private static RenderPipeline debugNormalPipeline() {
+        if (debugNormalPipeline == null) {
+            debugNormalPipeline = buildScreenPipeline("metallum/pipeline/debug_normal", "core/debug_normal", new DepthStencilState(com.mojang.blaze3d.platform.CompareOp.ALWAYS_PASS, false));
+        }
+        return debugNormalPipeline;
+    }
+
     /**
      * Shared builder for full-screen composite passes. Every composite
      * pass shares the same {@code InSampler}/{@code DepthSampler}/
@@ -234,7 +246,12 @@ public final class CompositePass {
         CommandEncoder encoder = RenderSystem.getDevice().createCommandEncoder();
         encoder.copyTextureToTexture(main.getColorTexture(), scene.getColorTexture(), 0, 0, 0, 0, 0, main.width, main.height);
         encoder.copyTextureToTexture(main.getDepthTexture(), scene.getDepthTexture(), 0, 0, 0, 0, 0, main.width, main.height);
-        runScreenPass(debugDepthFullPipeline(), scene, main, gameRenderer, "metallum_debug_depth_full_stage");
+
+        // TEMP for the normal-reconstruction test: STAGE 2 shows
+        // debug_normal instead of debug_depth_full. Swap the pipeline
+        // below back to debugDepthFullPipeline() once normals are
+        // validated, or split this into its own toggle/hotkey.
+        runScreenPass(debugNormalPipeline(), scene, main, gameRenderer, "metallum_debug_normal_stage");
     }
 
     /**
@@ -244,6 +261,7 @@ public final class CompositePass {
     public static void close() {
         debugDepthPipeline = null;
         debugDepthFullPipeline = null;
+        debugNormalPipeline = null;
         if (colorSampler != null) {
             colorSampler.close();
             colorSampler = null;
