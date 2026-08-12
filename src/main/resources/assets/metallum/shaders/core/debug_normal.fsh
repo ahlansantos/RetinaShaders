@@ -43,22 +43,10 @@ void main() {
         return;
     }
 
-    vec2 texel = 1.0 / vec2(textureSize(DepthSampler, 0));
-
-    // PERF: cut from 5 taps to 3 (center + right + up only). Drops the
-    // closer-neighbor selection that fought silhouette-edge noise (see
-    // git history / old 5-sample version if this needs reverting) --
-    // expect more noise on block/mob silhouettes against sky than before.
-    // Flat faces and hard interior edges are unaffected, since those never
-    // relied on the left/down taps anyway.
+    // Otimização: calcular a normal a partir das derivadas parciais do espaço de visão
+    // Isso evita buscar o depth 3 vezes por pixel (economizando 2 samples e cálculos)
     vec3 center = viewPosAt(texCoord);
-    vec3 right = viewPosAt(texCoord + vec2(texel.x, 0.0));
-    vec3 up = viewPosAt(texCoord + vec2(0.0, texel.y));
-
-    vec3 dx = right - center;
-    vec3 dy = up - center;
-
-    vec3 normal = normalize(cross(dx, dy));
+    vec3 normal = normalize(cross(dFdx(center), dFdy(center)));
 
     // View-space normal, remapped from [-1,1] to [0,1] for display --
     // same convention as any packed normal G-buffer, so this doubles as

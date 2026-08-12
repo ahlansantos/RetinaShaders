@@ -12,15 +12,13 @@ in vec2 texCoord;
 
 out vec4 fragColor;
 
-const int SAMPLE_COUNT = 12;
-const float RADIUS = 0.5;
+const int SAMPLE_COUNT = 8;
+const float RADIUS = 0.8;
 const float BIAS = 0.025;
 
 const vec3 KERNEL[SAMPLE_COUNT] = vec3[](
-    vec3( 0.041, -0.048,  0.045), vec3( 0.062,  0.028,  0.078),
-    vec3(-0.028, -0.072,  0.112), vec3( 0.096,  0.045,  0.156),
-    vec3(-0.086,  0.102,  0.201), vec3( 0.145, -0.110,  0.267),
-    vec3(-0.161, -0.098,  0.331), vec3( 0.083,  0.211,  0.398),
+    vec3( 0.041, -0.048,  0.045), vec3( 0.096,  0.045,  0.156),
+    vec3( 0.145, -0.110,  0.267), vec3(-0.161, -0.098,  0.331),
     vec3( 0.221, -0.187,  0.452), vec3(-0.244,  0.163,  0.531),
     vec3( 0.102,  0.298,  0.612), vec3(-0.187, -0.276,  0.708)
 );
@@ -47,12 +45,11 @@ void main() {
 
     vec3 sceneColor = texture(InSampler, texCoord).rgb;
 
-    vec2 texel = 1.0 / vec2(textureSize(DepthSampler, 0));
     vec3 origin = viewPosAt(texCoord);
 
-    vec3 right = viewPosAt(texCoord + vec2(texel.x, 0.0));
-    vec3 up = viewPosAt(texCoord + vec2(0.0, texel.y));
-    vec3 normal = normalize(cross(right - origin, up - origin));
+    // Otimização: calcular a normal a partir das derivadas parciais do espaço de visão
+    // Isso evita buscar o depth 3 vezes por pixel (economizando 2 samples e cálculos)
+    vec3 normal = normalize(cross(dFdx(origin), dFdy(origin)));
 
     float angle = hash(texCoord) * 6.28318530718;
     vec3 randomVec = vec3(cos(angle), sin(angle), 0.0);
@@ -73,13 +70,14 @@ void main() {
         }
 
         vec3 sampledGeometry = viewPosAt(sampleUV);
-        float rangeCheck = smoothstep(0.0, 1.0, RADIUS / max(abs(origin.z - sampledGeometry.z), 0.0001));
+        // Corrige o "cutout" limitando o sangramento do AO em objetos distantes
+        float rangeCheck = smoothstep(0.0, 1.0, 1.0 - (abs(origin.z - sampledGeometry.z) / RADIUS));
         occlusion += (sampledGeometry.z >= samplePos.z + BIAS ? 1.0 : 0.0) * rangeCheck;
     }
 
     float ao = 1.0 - (occlusion / float(SAMPLE_COUNT));
     
-    // Aumenta a intensidade do AO para deixar as sombras de contato mais fortes
+    // Diminui um pouco a intensidade para ficar mais suave
     ao = pow(ao, 1.8);
     
     // Multiplica o AO na cor original da cena

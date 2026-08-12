@@ -71,16 +71,11 @@ void main() {
         return;
     }
 
-    vec2 texel = 1.0 / vec2(textureSize(DepthSampler, 0));
     vec3 origin = viewPosAt(texCoord);
 
-    // Same 3-tap reconstruction as debug_normal.fsh (center+right+up) --
-    // see that file for why this is what it is and its known silhouette
-    // noise. Kept inline rather than sampled from a buffer because there
-    // is no persistent normal buffer to sample from yet.
-    vec3 right = viewPosAt(texCoord + vec2(texel.x, 0.0));
-    vec3 up = viewPosAt(texCoord + vec2(0.0, texel.y));
-    vec3 normal = normalize(cross(right - origin, up - origin));
+    // Otimização: calcular a normal a partir das derivadas parciais do espaço de visão
+    // Isso evita buscar o depth 3 vezes por pixel (economizando 2 samples e cálculos)
+    vec3 normal = normalize(cross(dFdx(origin), dFdy(origin)));
 
     // Build a rotated TBN so the fixed +Z-hemisphere kernel orients
     // around this pixel's actual normal.
