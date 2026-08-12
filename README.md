@@ -1,4 +1,4 @@
-## Retina S
+## Retina S v0.0.1
 ### (S = Shaders)
 Retina S is an experimental rendering backend for Minecraft on macOS that uses Apple’s Metal API instead of OpenGL/Vulkan. It provides a more native rendering path and aims to improve performance and efficiency on Apple Silicon. Fork of Metallum by Kokodio, and of my own metallum-bleedingedge (old fork that I used to ship early features in it lol)
 
@@ -14,7 +14,7 @@ Right now Retina S lives as a fork on top of Metallum. Long-term goal is to spli
 ## Changes from Metallum
 1. ShaderLoader (intial shader support and more)
 2. Same functions from metallum-bleeding edge
-3. Deferred GBuffer pass (opaque terrain redirected off-screen, composited back before translucent/entities draw) — currently only used for a debug_depth view
+3. Deferred GBuffer pass (opaque terrain redirected off-screen, composited back before translucent/entities draw) — currently used for Real SSAO and debug views.
 4. Full-scene composite hook, firing after translucent terrain + entities + outline finish drawing — currently runs a debug_depth pass over the whole frame (water, mobs, block outline all included), proving the pipeline end-to-end. Real post-process (fog, etc) goes here next.
 
 ## Current status
@@ -32,10 +32,22 @@ Shadow map, bloom, and fog were pulled out and haven't been rebuilt yet.
 `debug_normal` is noticeably heavier than `debug_depth_full` — drops observed to 30-50 FPS with 16-34ms frame intervals, whole system feeling laggy. Not yet root-caused, but the obvious suspects: 5 dependent texture samples + 5 full `InvProjMat` unprojects per pixel (vs. 1 for debug_depth), running at full render resolution, every frame, on top of the two full-frame `copyTextureToTexture` calls `runFull` already does. This is a debug-only visualization, not representative of what a real MRT-based normal buffer would cost (that writes normals once per pixel during the terrain draw itself, not reconstructs them from scratch per composite frame) — but worth profiling before assuming it's "just how normals are" going forward.
 
 ## Screenshots
-![Full-scene depth debug](pictures/depth1.png)
-![Full-scene normal debug (depth-reconstructed)](pictures/normal1.png)
 
+### 1. Real SSAO (Ambient Occlusion)
+The final scene rendered with contact shadows (SSAO) applied over opaque geometry.
+![Real SSAO (Ambient Occlusion)](pictures/ssao.png)
 
+### 2. SSAO Debug View
+Isolated visualization of the computed occlusion term, without scene colors.
+![SSAO Debug View (Occlusion Term)](pictures/ssao_debug.png)
+
+### 3. Depth Buffer Debug
+Linearized view of the depth buffer used for view-space position reconstruction.
+![Full-scene depth debug](pictures/depth.png)
+
+### 4. Normal Buffer Debug
+Visualization of normals mathematically reconstructed from depth (no real G-Buffer MRT yet).
+![Full-scene normal debug (depth-reconstructed)](pictures/normal.png)
 
 ## Requirements
 - macOS

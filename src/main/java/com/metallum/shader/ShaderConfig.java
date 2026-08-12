@@ -41,7 +41,7 @@ public final class ShaderConfig {
     // image. This is currently the ONLY composite path -- see
     // CompositePass -- so it's on by default. Flip it off once a real
     // color composite exists again.
-    public boolean debugDepth = false;
+    public boolean debugDepth = true;
 
     // Debug visualization: shows the depth-reconstructed view-space
     // normal (see debug_normal.fsh) instead of the normal composited
@@ -58,7 +58,10 @@ public final class ShaderConfig {
     // Heaviest of the three debug views (12-tap kernel, full-res) --
     // expect this to need the same half-res+upscale treatment discussed
     // for debugNormal, likely sooner.
-    public boolean debugSSAO = true;
+    public boolean debugSSAO = false;
+
+    // The real, full SSAO pass applied over opaque geometry.
+    public boolean ssaoEnabled = false;
 
     // Render resolution scale for the deferred passes, independent of the
     // final present resolution. <1.0 lets you keep ultra features at

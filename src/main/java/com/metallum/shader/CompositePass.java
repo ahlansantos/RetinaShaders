@@ -104,14 +104,31 @@ public final class CompositePass {
 
     private static RenderPipeline ssaoPipeline;
 
-    // Same depth state as the other full-scene debug views -- see the
-    // Bug #1 comment above debugNormalPipeline for why this can't be
-    // DepthStencilState.DEFAULT here.
     private static RenderPipeline ssaoPipeline() {
         if (ssaoPipeline == null) {
             ssaoPipeline = buildScreenPipeline("metallum/pipeline/debug_occlusion", "core/debug_occlusion", new DepthStencilState(com.mojang.blaze3d.platform.CompareOp.ALWAYS_PASS, false));
         }
         return ssaoPipeline;
+    }
+
+    private static RenderPipeline ambientOcclusionPipeline;
+
+    private static RenderPipeline ambientOcclusionPipeline() {
+        if (ambientOcclusionPipeline == null) {
+            // Must write depth (DepthStencilState.DEFAULT) so entities/water depth-test correctly against opaque terrain
+            ambientOcclusionPipeline = buildScreenPipeline("metallum/pipeline/ambient_occlusion", "core/ambient_occlusion", DepthStencilState.DEFAULT);
+        }
+        return ambientOcclusionPipeline;
+    }
+
+    private static RenderPipeline blitPipeline;
+
+    private static RenderPipeline blitPipeline() {
+        if (blitPipeline == null) {
+            // Must write depth for same reason as above
+            blitPipeline = buildScreenPipeline("metallum/pipeline/blit", "core/blit", DepthStencilState.DEFAULT);
+        }
+        return blitPipeline;
     }
 
     /**
@@ -231,7 +248,14 @@ public final class CompositePass {
      */
     public static void runOpaque(final GBuffer gbuffer, final RenderTarget main, final GameRenderer gameRenderer) {
         TextureTarget scene = gbuffer.sceneTarget();
-        runScreenPass(debugDepthPipeline(), scene, main, gameRenderer, "metallum_debug_depth_stage");
+        com.metallum.shader.ShaderConfig cfg = com.metallum.shader.ShaderConfig.get();
+        if (cfg.debugDepth) {
+            runScreenPass(debugDepthPipeline(), scene, main, gameRenderer, "metallum_debug_depth_stage");
+        } else if (cfg.ssaoEnabled) {
+            runScreenPass(ambientOcclusionPipeline(), scene, main, gameRenderer, "metallum_ssao_stage");
+        } else {
+            runScreenPass(blitPipeline(), scene, main, gameRenderer, "metallum_blit_stage");
+        }
     }
 
     /**
@@ -283,6 +307,8 @@ public final class CompositePass {
         debugDepthFullPipeline = null;
         debugNormalPipeline = null;
         ssaoPipeline = null;
+        ambientOcclusionPipeline = null;
+        blitPipeline = null;
         if (colorSampler != null) {
             colorSampler.close();
             colorSampler = null;
