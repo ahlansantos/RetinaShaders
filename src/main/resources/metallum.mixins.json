@@ -1,0 +1,23 @@
+{
+  "required": true,
+  "package": "com.metallum.mixin",
+  "plugin": "com.metallum.mixin.MetallumMixinConfigPlugin",
+  "compatibilityLevel": "JAVA_25",
+  "mixins": [
+  ],
+  "client": [
+    "render.ChunkSectionsToRenderGBufferMixin",
+    "render.PreferredGraphicsApiMixin",
+    "sodium.DefaultChunkRendererGBufferMixin",
+    "sodium.DrawBackendMixin",
+    "sodium.DrawContextMixin",
+    "sodium.SodiumPreferredGraphicsApiMixin",
+    "sodium.SodiumWorldRendererGBufferMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "overwrites": {
+    "requireAnnotations": true
+  }
+}

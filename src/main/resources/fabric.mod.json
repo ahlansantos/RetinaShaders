@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "metallum",
+  "version": "${version}",
+  "name": "Metal-Alloy",
+  "description": "Metallum's Metal backend for Minecraft on macOS, plus a deferred shading layer (shadows, SSAO/SSGI, TAA) built on top of it.",
+  "authors": [
+    "ahlansantos - shader code",
+    "kokodio - main code"
+  ],
+  "contact": {
+    "homepage": "https://github.com/ahlansantos/metal-alloy",
+    "sources": "https://github.com/ahlansantos/metal-alloy"
+  },
+  "license": "MIT",
+  "accessWidener": "metallum.accesswidener",
+  "icon": "assets/metallum/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.metallum.Metallum"
+    ]
+  },
+  "mixins": [
+    "metallum.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.19.2",
+    "minecraft": "~26.2-",
+    "java": ">=25"
+  }
+}
