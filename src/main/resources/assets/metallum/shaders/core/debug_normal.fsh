@@ -45,18 +45,18 @@ void main() {
 
     vec2 texel = 1.0 / vec2(textureSize(DepthSampler, 0));
 
+    // PERF: cut from 5 taps to 3 (center + right + up only). Drops the
+    // closer-neighbor selection that fought silhouette-edge noise (see
+    // git history / old 5-sample version if this needs reverting) --
+    // expect more noise on block/mob silhouettes against sky than before.
+    // Flat faces and hard interior edges are unaffected, since those never
+    // relied on the left/down taps anyway.
     vec3 center = viewPosAt(texCoord);
     vec3 right = viewPosAt(texCoord + vec2(texel.x, 0.0));
-    vec3 left = viewPosAt(texCoord - vec2(texel.x, 0.0));
     vec3 up = viewPosAt(texCoord + vec2(0.0, texel.y));
-    vec3 down = viewPosAt(texCoord - vec2(0.0, texel.y));
 
-    // Pick whichever neighbor pair is closer to `center` on each axis --
-    // cuts down on the silhouette-edge noise mentioned above, since a
-    // neighbor tap that jumped to a much farther/nearer surface will
-    // almost always be the wrong one to build the edge vector from.
-    vec3 dx = (abs(right.z - center.z) < abs(left.z - center.z)) ? (right - center) : (center - left);
-    vec3 dy = (abs(up.z - center.z) < abs(down.z - center.z)) ? (up - center) : (center - down);
+    vec3 dx = right - center;
+    vec3 dy = up - center;
 
     vec3 normal = normalize(cross(dx, dy));
 

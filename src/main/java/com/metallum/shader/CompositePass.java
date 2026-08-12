@@ -102,6 +102,18 @@ public final class CompositePass {
         return debugNormalPipeline;
     }
 
+    private static RenderPipeline ssaoPipeline;
+
+    // Same depth state as the other full-scene debug views -- see the
+    // Bug #1 comment above debugNormalPipeline for why this can't be
+    // DepthStencilState.DEFAULT here.
+    private static RenderPipeline ssaoPipeline() {
+        if (ssaoPipeline == null) {
+            ssaoPipeline = buildScreenPipeline("metallum/pipeline/debug_occlusion", "core/debug_occlusion", new DepthStencilState(com.mojang.blaze3d.platform.CompareOp.ALWAYS_PASS, false));
+        }
+        return ssaoPipeline;
+    }
+
     /**
      * Shared builder for full-screen composite passes. Every composite
      * pass shares the same {@code InSampler}/{@code DepthSampler}/
@@ -247,11 +259,19 @@ public final class CompositePass {
         encoder.copyTextureToTexture(main.getColorTexture(), scene.getColorTexture(), 0, 0, 0, 0, 0, main.width, main.height);
         encoder.copyTextureToTexture(main.getDepthTexture(), scene.getDepthTexture(), 0, 0, 0, 0, 0, main.width, main.height);
 
-        // TEMP for the normal-reconstruction test: STAGE 2 shows
-        // debug_normal instead of debug_depth_full. Swap the pipeline
-        // below back to debugDepthFullPipeline() once normals are
-        // validated, or split this into its own toggle/hotkey.
-        runScreenPass(debugNormalPipeline(), scene, main, gameRenderer, "metallum_debug_normal_stage");
+        // Which full-scene debug view runs here is now config-driven --
+        // see ShaderConfig#debugNormal / #debugDepth. debugNormal wins if
+        // both are true (it's the heavier/newer one being validated);
+        // debugDepth falls back to the depth view; if neither is set,
+        // skip the debug pass entirely and just present the copied scene.
+        com.metallum.shader.ShaderConfig cfg = com.metallum.shader.ShaderConfig.get();
+        if (cfg.debugSSAO) {
+            runScreenPass(ssaoPipeline(), scene, main, gameRenderer, "metallum_ssao_stage");
+        } else if (cfg.debugNormal) {
+            runScreenPass(debugNormalPipeline(), scene, main, gameRenderer, "metallum_debug_normal_stage");
+        } else if (cfg.debugDepth) {
+            runScreenPass(debugDepthFullPipeline(), scene, main, gameRenderer, "metallum_debug_depth_full_stage");
+        }
     }
 
     /**
@@ -262,6 +282,7 @@ public final class CompositePass {
         debugDepthPipeline = null;
         debugDepthFullPipeline = null;
         debugNormalPipeline = null;
+        ssaoPipeline = null;
         if (colorSampler != null) {
             colorSampler.close();
             colorSampler = null;
