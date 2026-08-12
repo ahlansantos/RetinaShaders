@@ -119,12 +119,22 @@ abstract class LevelRendererGBufferMixin {
     // been waiting on. It's wired unconditionally now; runFull itself is
     // still a no-op (see its doc) until a real full-scene pass exists,
     // so this fires every frame for free with nothing behind it yet.
-    @Inject(method = "lambda$addMainPass$0", at = @At("TAIL"))
+    @Inject(
+            method = "render",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lcom/mojang/blaze3d/framegraph/FrameGraphBuilder;execute(Lcom/mojang/blaze3d/resource/GraphicsResourceAllocator;Lcom/mojang/blaze3d/framegraph/FrameGraphBuilder$Inspector;)V",
+                    shift = At.Shift.AFTER
+            ),
+            require = 1
+    )
     private void metallum$compositeFull(final CallbackInfo ci) {
+        com.metallum.Metallum.LOGGER.info("[metallum] STAGE2 execute() AFTER hook REACHED");
         if (!ShaderConfig.get().enabled) {
             return;
         }
 
+        com.metallum.Metallum.LOGGER.info("[metallum] STAGE2 execute() AFTER hook firing");
         RenderTarget main = this.gameRenderer.mainRenderTarget();
         ShaderPipeline.get().compositeFullAndPresent(main, this.gameRenderer);
     }

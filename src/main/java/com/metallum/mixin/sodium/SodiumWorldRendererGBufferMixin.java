@@ -87,6 +87,7 @@ abstract class SodiumWorldRendererGBufferMixin {
             if (clearedThisFrame && !compositedThisFrame) {
                 GameRenderer gameRenderer = Minecraft.getInstance().gameRenderer;
                 RenderTarget main = gameRenderer.mainRenderTarget();
+                com.metallum.Metallum.LOGGER.info("[metallum] SODIUM STAGE1 compositeAndPresent firing");
                 // Single-stage composite (no fog split) — matches
                 // ShaderPipeline#compositeAndPresent, the only composite
                 // entry point that exists. Runs once per frame, right

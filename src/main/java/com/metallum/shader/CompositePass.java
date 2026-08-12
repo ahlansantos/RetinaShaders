@@ -60,9 +60,11 @@ import java.util.OptionalDouble;
  * all drawn onto {@code main} by then. It's the same lambda name the
  * existing OPAQUE-stage mixin already targets, just a different
  * {@code @At}. This is wired up now (see
- * {@code LevelRendererGBufferMixin#metallum$compositeFull}) but
- * {@link #runFull} itself is still a no-op below — no fog pass exists
- * yet, this only proves the hook point is safe to fire from.
+ * {@code LevelRendererGBufferMixin#metallum$compositeFull}). {@link #runFull}
+ * now snapshots `main`'s complete color+depth into `gbuffer`'s current
+ * slot and re-runs debug_depth against it, so water/entity depth should
+ * show up in the debug view now too. No fog pass yet — still just
+ * debug_depth, same as {@link #runOpaque}.
  */
 public final class CompositePass {
     private static RenderPipeline debugDepthPipeline;
@@ -72,11 +74,20 @@ public final class CompositePass {
     private CompositePass() {
     }
 
+    private static RenderPipeline debugDepthFullPipeline;
+
     private static RenderPipeline debugDepthPipeline() {
         if (debugDepthPipeline == null) {
-            debugDepthPipeline = buildScreenPipeline("metallum/pipeline/debug_depth", "core/debug_depth");
+            debugDepthPipeline = buildScreenPipeline("metallum/pipeline/debug_depth", "core/debug_depth", DepthStencilState.DEFAULT);
         }
         return debugDepthPipeline;
+    }
+
+    private static RenderPipeline debugDepthFullPipeline() {
+        if (debugDepthFullPipeline == null) {
+            debugDepthFullPipeline = buildScreenPipeline("metallum/pipeline/debug_depth_full", "core/debug_depth", new DepthStencilState(com.mojang.blaze3d.platform.CompareOp.ALWAYS_PASS, false));
+        }
+        return debugDepthFullPipeline;
     }
 
     /**
@@ -88,7 +99,7 @@ public final class CompositePass {
      * binding block in {@code runScreenPass}, so don't casually add
      * bindings here without adding the matching bind call below.
      */
-    private static RenderPipeline buildScreenPipeline(final String location, final String fragmentPath) {
+    private static RenderPipeline buildScreenPipeline(final String location, final String fragmentPath, final DepthStencilState depthState) {
         BindGroupLayout.Builder layout = BindGroupLayout.builder()
                 .withSampler("InSampler")
                 .withSampler("DepthSampler")
@@ -100,7 +111,7 @@ public final class CompositePass {
                 .withFragmentShader(Identifier.fromNamespaceAndPath("metallum", fragmentPath))
                 .withBindGroupLayout(layout.build())
                 .withColorTargetState(0, new ColorTargetState(BlendFunction.TRANSLUCENT))
-                .withDepthStencilState(DepthStencilState.DEFAULT)
+                .withDepthStencilState(depthState)
                 .withCull(false)
                 .withPrimitiveTopology(PrimitiveTopology.TRIANGLE_STRIP)
                 .build();
@@ -217,21 +228,13 @@ public final class CompositePass {
      * the fog math itself.
      */
     public static void runFull(final GBuffer gbuffer, final RenderTarget main, final GameRenderer gameRenderer) {
-        // No-op on purpose: the injection point (LevelRendererGBufferMixin,
-        // TAIL of lambda$addMainPass$0) is now wired and firing every
-        // frame with the complete scene already on `main`, but there's no
-        // full-scene pass to run yet (fog/etc intentionally skipped for
-        // now — see class doc). This used to throw
-        // UnsupportedOperationException, which would've crashed every
-        // frame the moment something called it. Once a real full-scene
-        // pass exists, it belongs here: `main`'s own color+depth is what
-        // it should sample (not `gbuffer`, which only ever holds opaque —
-        // see ChunkSectionsToRenderGBufferMixin). Grab a snapshot via
-        // `main.blitAndBlendToTexture(gbuffer.sceneTarget().get*View())`
-        // onto a cleared scene target first (same pattern already used
-        // for LevelRenderer's entityOutlineTarget), then run a screen
-        // pass reading that snapshot and writing back onto `main`,
-        // same shape as runScreenPass/runOpaque above.
+        com.metallum.Metallum.LOGGER.info("[metallum] runFull firing");
+        TextureTarget scene = gbuffer.sceneTarget();
+
+        CommandEncoder encoder = RenderSystem.getDevice().createCommandEncoder();
+        encoder.copyTextureToTexture(main.getColorTexture(), scene.getColorTexture(), 0, 0, 0, 0, 0, main.width, main.height);
+        encoder.copyTextureToTexture(main.getDepthTexture(), scene.getDepthTexture(), 0, 0, 0, 0, 0, main.width, main.height);
+        runScreenPass(debugDepthFullPipeline(), scene, main, gameRenderer, "metallum_debug_depth_full_stage");
     }
 
     /**
@@ -240,6 +243,7 @@ public final class CompositePass {
      */
     public static void close() {
         debugDepthPipeline = null;
+        debugDepthFullPipeline = null;
         if (colorSampler != null) {
             colorSampler.close();
             colorSampler = null;
