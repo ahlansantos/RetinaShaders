@@ -62,7 +62,7 @@ public final class ShaderConfig {
     public boolean ssrEnabled = true;
 
     // The real, full SSAO pass applied over opaque geometry.
-    public boolean ssaoEnabled = false;
+    public boolean ssaoEnabled = true;
 
     // Render resolution scale for the deferred passes, independent of the
     // final present resolution. <1.0 lets you keep ultra features at

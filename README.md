@@ -24,6 +24,15 @@ Linearized view of the depth buffer used for view-space position reconstruction.
 Visualization of normals mathematically reconstructed from depth.
 ![Full-scene normal debug (depth-reconstructed)](pictures/normal.png)
 
+### 5. SSR (Screen-Space Reflections)
+Reflective surfaces rendered using screen-space raymarching.
+![SSR (Screen-Space Reflections)](pictures/ssr1.png)
+
+### 6. SSR + SSAO Combined
+Screen-space reflections composited together with ambient occlusion.
+![SSR + SSAO Combined](pictures/ssr_ao1.png)
+
 ## Requirements
 - macOS
 - Apple Silicon (M1 or newer)
+- 8GB RAM Minimum (Obviously..)
