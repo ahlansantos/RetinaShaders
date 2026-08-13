@@ -47,8 +47,8 @@ void main() {
 
     vec3 origin = viewPosAt(texCoord);
 
-    // Otimização: calcular a normal a partir das derivadas parciais do espaço de visão
-    // Isso evita buscar o depth 3 vezes por pixel (economizando 2 samples e cálculos)
+    // Optimization: calculate the normal from the view space partial derivatives
+    // This avoids fetching depth 3 times per pixel (saving 2 samples and calculations)
     vec3 normal = normalize(cross(dFdx(origin), dFdy(origin)));
 
     float angle = hash(texCoord) * 6.28318530718;

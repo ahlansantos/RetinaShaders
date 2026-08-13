@@ -43,8 +43,8 @@ void main() {
         return;
     }
 
-    // Otimização: calcular a normal a partir das derivadas parciais do espaço de visão
-    // Isso evita buscar o depth 3 vezes por pixel (economizando 2 samples e cálculos)
+    // Optimization: calculate the normal from the view space partial derivatives
+    // This avoids fetching depth 3 times per pixel (saving 2 samples and calculations)
     vec3 center = viewPosAt(texCoord);
     vec3 normal = normalize(cross(dFdx(center), dFdy(center)));
 

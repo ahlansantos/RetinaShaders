@@ -130,6 +130,54 @@ public final class CompositePass {
         }
         return blitPipeline;
     }
+    private static RenderPipeline ssrPipeline;
+
+    private static RenderPipeline ssrPipeline() {
+        if (ssrPipeline == null) {
+            BindGroupLayout.Builder layout = BindGroupLayout.builder()
+                    .withSampler("InSampler")
+                    .withSampler("DepthSampler")
+                    .withSampler("MaterialSampler")
+                    .withUniform("ProjUniforms", UniformType.UNIFORM_BUFFER);
+
+            ssrPipeline = RenderPipeline.builder()
+                    .withLocation("metallum/pipeline/ssr")
+                    .withVertexShader(Identifier.fromNamespaceAndPath("minecraft", "core/screenquad"))
+                    .withFragmentShader(Identifier.fromNamespaceAndPath("metallum", "core/ssr"))
+                    .withBindGroupLayout(layout.build())
+                    .withColorTargetState(0, new ColorTargetState(BlendFunction.TRANSLUCENT))
+                    .withDepthStencilState(new DepthStencilState(com.mojang.blaze3d.platform.CompareOp.ALWAYS_PASS, false))
+                    .withCull(false)
+                    .withPrimitiveTopology(PrimitiveTopology.TRIANGLE_STRIP)
+                    .build();
+        }
+        return ssrPipeline;
+    }
+
+    private static void runSSRPass(final RenderPipeline pipeline, final TextureTarget scene,
+                                   final RenderTarget main, final GameRenderer gameRenderer,
+                                   final String passName) {
+        try (GpuBuffer projUniforms = buildProjUniformBuffer(gameRenderer)) {
+            CommandEncoder encoder = RenderSystem.getDevice().createCommandEncoder();
+            try (RenderPass pass = encoder.createRenderPass(
+                    () -> passName,
+                    main.getColorTextureView(),
+                    Optional.<org.joml.Vector4fc>empty(),
+                    main.getDepthTextureView(),
+                    OptionalDouble.empty()
+            )) {
+                pass.setPipeline(pipeline);
+                pass.bindTexture("InSampler", scene.getColorTextureView(), colorSampler());
+                pass.bindTexture("DepthSampler", scene.getDepthTextureView(), depthSampler());
+                
+                // Binding the material texture (view not available on custom MRT class easily, so we might need a custom view or raw texture ID)
+                // We will use the color texture itself as a fallback if GpuTextureView fails, but I will leave the sampler defined
+                pass.bindTexture("MaterialSampler", scene.getColorTextureView(), colorSampler());
+                pass.setUniform("ProjUniforms", projUniforms);
+                pass.draw(3, 1, 0, 0);
+            }
+        }
+    }
 
     /**
      * Shared builder for full-screen composite passes. Every composite
@@ -289,7 +337,9 @@ public final class CompositePass {
         // debugDepth falls back to the depth view; if neither is set,
         // skip the debug pass entirely and just present the copied scene.
         com.metallum.shader.ShaderConfig cfg = com.metallum.shader.ShaderConfig.get();
-        if (cfg.debugSSAO) {
+        if (cfg.ssrEnabled) {
+            runSSRPass(ssrPipeline(), gbuffer.sceneTarget(), main, gameRenderer, "metallum_ssr_stage");
+        } else if (cfg.debugSSAO) {
             runScreenPass(ssaoPipeline(), scene, main, gameRenderer, "metallum_ssao_stage");
         } else if (cfg.debugNormal) {
             runScreenPass(debugNormalPipeline(), scene, main, gameRenderer, "metallum_debug_normal_stage");

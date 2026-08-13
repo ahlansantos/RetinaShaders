@@ -49,7 +49,7 @@ public final class ShaderConfig {
     // wins in CompositePass#runFull (it's the full-scene stage; debugDepth
     // here only affects the opaque-only stage). Off by default since it's
     // heavier than debugDepth (see README's "Known perf issue" section).
-    public boolean debugNormal = true;
+    public boolean debugNormal = false;
 
     // Debug visualization: raw AO term from debug_occlusion.fsh (grayscale,
     // white = unoccluded, black = fully occluded), NOT yet multiplied
@@ -59,6 +59,7 @@ public final class ShaderConfig {
     // expect this to need the same half-res+upscale treatment discussed
     // for debugNormal, likely sooner.
     public boolean debugSSAO = false;
+    public boolean ssrEnabled = true;
 
     // The real, full SSAO pass applied over opaque geometry.
     public boolean ssaoEnabled = false;
