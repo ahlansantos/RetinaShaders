@@ -28,8 +28,9 @@ Both stages need their own mixin: the opaque stage hooks Sodium's `drawChunkLaye
 
 Shadow map, bloom, and fog were pulled out and haven't been rebuilt yet.
 
-### Known perf issue (normal debug)
-`debug_normal` is noticeably heavier than `debug_depth_full` — drops observed to 30-50 FPS with 16-34ms frame intervals, whole system feeling laggy. Not yet root-caused, but the obvious suspects: 5 dependent texture samples + 5 full `InvProjMat` unprojects per pixel (vs. 1 for debug_depth), running at full render resolution, every frame, on top of the two full-frame `copyTextureToTexture` calls `runFull` already does. This is a debug-only visualization, not representative of what a real MRT-based normal buffer would cost (that writes normals once per pixel during the terrain draw itself, not reconstructs them from scratch per composite frame) — but worth profiling before assuming it's "just how normals are" going forward.
+### Performance
+- **SSAO:** Currently runs at around ~53-60 FPS at high resolutions (e.g., 3360x2170, near 4K).
+- **Normal Debug:** The previous performance drops with `debug_normal` have been resolved. It now runs smoothly without performance issues, even at high resolutions like 3360x2170.
 
 ## Screenshots
 
@@ -48,7 +49,7 @@ Linearized view of the depth buffer used for view-space position reconstruction.
 ### 4. Normal Buffer Debug
 Visualization of normals mathematically reconstructed from depth (no real G-Buffer MRT yet).
 ![Full-scene normal debug (depth-reconstructed)](pictures/normal.png)
-
+x   
 ## Requirements
 - macOS
 - Apple Silicon (M1 or newer)
