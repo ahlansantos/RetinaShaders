@@ -8,31 +8,35 @@ Compatible with Sodium.
 
 ## Screenshots
 
-### 1. Real SSAO (Ambient Occlusion)
+### SSAO (Ambient Occlusion)
 The final scene rendered with contact shadows (SSAO) applied over opaque geometry.
 ![Real SSAO (Ambient Occlusion)](pictures/ssao.png)
 
-### 2. SSAO Debug View
-Isolated visualization of the computed occlusion term, without scene colors.
-![SSAO Debug View (Occlusion Term)](pictures/ssao_debug.png)
-
-### 3. Depth Buffer Debug
-Linearized view of the depth buffer used for view-space position reconstruction.
-![Full-scene depth debug](pictures/depth.png)
-
-### 4. Normal Buffer Debug
-Visualization of normals mathematically reconstructed from depth.
-![Full-scene normal debug (depth-reconstructed)](pictures/normal.png)
-
-### 5. SSR (Screen-Space Reflections)
+### SSR (Screen-Space Reflections)
 Reflective surfaces rendered using screen-space raymarching.
 ![SSR (Screen-Space Reflections)](pictures/ssr1.png)
 
-### 6. SSR + SSAO Combined
+### SSR + SSAO Combined
 Screen-space reflections composited together with ambient occlusion.
 ![SSR + SSAO Combined](pictures/ssr_ao1.png)
+
+<details>
+<summary><strong>🔧 Debug Views (click to expand)</strong></summary>
+
+#### SSAO Debug View
+Isolated visualization of the computed occlusion term, without scene colors.
+![SSAO Debug View (Occlusion Term)](pictures/ssao_debug.png)
+
+#### Depth Buffer Debug
+Linearized view of the depth buffer used for view-space position reconstruction.
+![Full-scene depth debug](pictures/depth.png)
+
+#### Normal Buffer Debug
+Visualization of normals mathematically reconstructed from depth.
+![Full-scene normal debug (depth-reconstructed)](pictures/normal.png)
+
+</details>
 
 ## Requirements
 - macOS
 - Apple Silicon (M1 or newer)
-- 8GB RAM Minimum (Obviously..)
